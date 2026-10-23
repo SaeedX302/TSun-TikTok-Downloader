@@ -1,15 +1,70 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TSun - Premium TikTok Video Downloader</title>
-    <meta name="description" content="Download TikTok videos without watermark in HD quality. Fast, secure, and completely free TikTok downloader.">
-    <meta name="keywords" content="TikTok downloader, video downloader, no watermark, HD quality, free">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#070b18" />
+    <meta name="color-scheme" content="dark light" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <title>TSun Studio — TikTok Video Downloader · No Watermark, HD</title>
+    <meta
+      name="description"
+      content="Download TikTok videos without watermark in HD, extract MP3 audio and save photo posts. Paste a direct link or the encoded link copied from the TikTok app. Free, fast and works on every screen."
+    />
+    <meta
+      name="keywords"
+      content="TikTok downloader, TikTok video download, no watermark, TikTok MP3, TikTok photo download, vm.tiktok.com, vt.tiktok.com, app share link"
+    />
+    <meta name="author" content="SaeedX302" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://tiktokvideodownloder.vercel.app/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="TSun Studio" />
+    <meta property="og:title" content="TSun Studio — TikTok Video Downloader" />
+    <meta
+      property="og:description"
+      content="Save TikTok videos in HD without a watermark. Supports app share links, encoded share text, MP3 audio and photo posts."
+    />
+    <meta property="og:url" content="https://tiktokvideodownloder.vercel.app/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="TSun Studio — TikTok Video Downloader" />
+    <meta
+      name="twitter:description"
+      content="Paste any TikTok link — including encoded app share links — and download HD video, audio or photos."
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('tsun.theme.v1');
+          var prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+          var isDark = stored ? stored === 'dark' : !prefersLight;
+          document.documentElement.classList.toggle('dark', isDark);
+          document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+        } catch (error) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <div style="font-family: sans-serif; padding: 2rem; text-align: center">
+        TSun Studio needs JavaScript enabled to download TikTok videos.
+      </div>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

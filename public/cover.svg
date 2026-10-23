@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1280" role="img" aria-label="TikTok video preview">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f172a" />
+      <stop offset="0.55" stop-color="#1e3a8a" />
+      <stop offset="1" stop-color="#701a75" />
+    </linearGradient>
+  </defs>
+  <rect width="720" height="1280" fill="url(#bg)" />
+  <circle cx="360" cy="560" r="96" fill="#fff" opacity="0.14" />
+  <path d="M340 498l120 62-120 62Z" fill="#fff" opacity="0.9" />
+  <text x="360" y="760" text-anchor="middle" font-family="sans-serif" font-size="42" font-weight="700" fill="#fff" opacity="0.85">TSun Studio</text>
+  <text x="360" y="812" text-anchor="middle" font-family="sans-serif" font-size="24" fill="#fff" opacity="0.55">Preview unavailable</text>
+</svg>
