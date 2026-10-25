@@ -10,10 +10,10 @@
 
 ---
 
-## ✨ What changed in v2
+## ✨ What changed in v2.1
 
-- 📱 **Rebuilt UI** — responsive aurora-glass design for Android, iPhone, tablet, desktop and ultrawide screens.
-- 🔗 **App share links now work** — `vm.tiktok.com`, `vt.tiktok.com`, `tiktok.com/t/` and full share messages.
+- 📱 **Platform-native interface** — Material 3 on Android, a native grouped iOS layout on iPhone/iPad, and an editorial workspace on desktop. No glass, blur or gradient decoration.
+- 🔗 **App share links work** — `vm.tiktok.com`, `vt.tiktok.com`, `tiktok.com/t/` and full share messages.
 - 🧼 **Share-text decoder** — removes emoji, zero-width characters, HTML entities and up to three layers of URL encoding.
 - 🎞️ **HD / SD / watermark / MP3** — every available format is listed with size and quality.
 - 🖼️ **Photo posts** — download each image from a TikTok carousel.
@@ -22,6 +22,16 @@
 - 🕘 **Local history** — reopen recent posts without fetching again.
 - 🌗 **Dark / light theme** — follows the system theme and remembers your choice.
 - 🔐 **No hardcoded API keys** — the old RapidAPI key was removed from the bundle.
+
+### Interface languages
+
+| Device | Interface |
+| --- | --- |
+| Android | Material 3: top app bar, filled text field, tonal surfaces, pill actions, navigation bar |
+| iPhone / iPad | Native iOS: large titles, inset grouped lists, separators, system blue, tab bar |
+| Desktop | Editorial workspace: serif display type, sidebar navigation, specimen-style result sheet |
+
+You can preview any interface in a desktop browser by adding `?ui=android`, `?ui=ios` or `?ui=web` to the URL. Design tokens and platform rules are documented in [DESIGN.md](DESIGN.md).
 
 ---
 
@@ -76,8 +86,19 @@ The endpoint must accept `?url=<tiktok-url>&hd=1` and return a TikWM-style `{ co
 
 ```
 src/
-├── components/          # Header, Hero, form, result card, history, footer, toast
-├── hooks/useTheme.ts    # Persisted dark/light theme
+├── components/
+│   ├── Shell.tsx        # Material 3 / iOS / desktop navigation shells
+│   ├── DownloadScreen.tsx
+│   ├── RecentScreen.tsx
+│   ├── GuideScreen.tsx
+│   ├── Composer.tsx     # Platform-specific link input
+│   ├── ResultAndroid.tsx
+│   ├── ResultIOS.tsx
+│   ├── ResultDesktop.tsx
+│   └── Brand.tsx, MediaFrame.tsx, PlatformToast.tsx
+├── hooks/
+│   ├── usePlatform.ts   # Android / iOS / desktop detection + ?ui= preview
+│   └── useTheme.ts      # Persisted dark/light theme
 ├── lib/
 │   ├── tiktokUrl.ts     # Share-text decoder + link parser (all formats)
 │   ├── tiktokApi.ts     # TikWM client, retries, normalisation, 15-min cache
@@ -85,8 +106,9 @@ src/
 │   ├── storage.ts       # Local history
 │   ├── format.ts        # Counts, durations, sizes, file names
 │   └── types.ts         # Shared media model
+├── ui/types.ts
 ├── App.tsx
-└── index.css            # Tailwind layers and glass utilities
+└── index.css            # Solid design tokens for all three interface languages
 ```
 
 ---
@@ -138,12 +160,12 @@ The app is a static SPA, so it also works on Netlify, Cloudflare Pages or GitHub
 npm test
 ```
 
-The suite covers:
+The suite covers 33 tests:
 
 - 15 link-parsing cases (direct, short, encoded, deep links, photo links, invalid input).
-- TikWM payload normalisation (HD/SD/watermark/audio, photo carousels, fallbacks).
+- 5 TikWM payload normalisation cases (HD/SD/watermark/audio, photo carousels, fallbacks).
 - Formatting utilities.
-- A full component test that pastes an encoded app share link, mocks the API and verifies the result UI.
+- 7 UI tests: encoded share-link flow, error state, tab navigation, Material 3 shell, iOS shell and iOS grouped result.
 
 ---
 
@@ -156,7 +178,7 @@ MIT © 2025 [SaeedX302](https://github.com/SaeedX302)
 - [TikWM](https://tikwm.com/) for the download API.
 - [Lucide](https://lucide.dev/) for icons.
 - [Tailwind CSS](https://tailwindcss.com/) and [Vite](https://vitejs.dev/) for the toolchain.
-- UI inspired by futuristic glassmorphism and aurora gradients.
+- UI direction: Anthropic's frontend-design skill, Material 3 guidelines and Apple Human Interface Guidelines.
 
 ## 🤝 Contributing
 

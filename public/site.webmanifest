@@ -1,11 +1,11 @@
 {
-  "name": "TSun Studio — TikTok Downloader",
+  "name": "TSun — TikTok Downloader",
   "short_name": "TSun",
-  "description": "Download TikTok videos in HD without watermark, extract MP3 audio and save photo posts. Supports links copied from the TikTok app.",
+  "description": "Download TikTok videos in HD without watermark, extract MP3 audio and save photo posts. A native-feeling interface on Android, iOS and desktop.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#070b18",
-  "theme_color": "#070b18",
+  "background_color": "#F2EFE7",
+  "theme_color": "#131210",
   "orientation": "portrait-primary",
   "icons": [
     {
