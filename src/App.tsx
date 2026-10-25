@@ -2,11 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DownloadOption, TikTokMedia } from './lib/types';
 import { describeLink, parseTikTokLink } from './lib/tiktokUrl';
 import { TikTokApiError, fetchTikTokMedia } from './lib/tiktokApi';
-import {
-  DownloadCancelledError,
-  buildDownloadName,
-  downloadFile,
-} from './lib/download';
+import { DownloadCancelledError, buildDownloadName, downloadFile } from './lib/download';
 import type { DownloadProgress } from './lib/download';
 import {
   clearHistory,
@@ -17,19 +13,22 @@ import {
 } from './lib/storage';
 import type { HistoryEntry } from './lib/storage';
 import { useTheme } from './hooks/useTheme';
-import { Header } from './components/Header';
-import { Hero } from './components/Hero';
-import { UrlForm } from './components/UrlForm';
-import type { FormError } from './components/UrlForm';
-import { LoadingCard } from './components/LoadingCard';
-import { MediaResult } from './components/MediaResult';
-import { HistoryPanel } from './components/HistoryPanel';
-import { HowItWorks, Features, Faq } from './components/InfoSections';
-import { Footer } from './components/Footer';
-import { Toast } from './components/Toast';
-import type { ToastState, ToastTone } from './components/Toast';
+import { usePlatform } from './hooks/usePlatform';
+import type { AppController, FormError, Tab } from './ui/types';
+import { Shell } from './components/Shell';
+import { DownloadScreen } from './components/DownloadScreen';
+import { RecentScreen } from './components/RecentScreen';
+import { GuideScreen } from './components/GuideScreen';
+import { PlatformToast } from './components/PlatformToast';
+import type { ToastState, ToastTone } from './components/PlatformToast';
 
 const SAMPLE_URL = 'https://www.tiktok.com/@ladygaga/video/7376784960625085742';
+
+const THEME_COLORS = {
+  desktop: { light: '#F2EFE7', dark: '#131210' },
+  android: { light: '#F6F8F4', dark: '#0F1410' },
+  ios: { light: '#F2F2F7', dark: '#000000' },
+};
 
 async function copyText(text: string): Promise<boolean> {
   try {
@@ -53,7 +52,9 @@ async function copyText(text: string): Promise<boolean> {
 }
 
 function App() {
+  const platform = usePlatform();
   const { theme, toggleTheme } = useTheme();
+  const [tab, setTab] = useState<Tab>('download');
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [media, setMedia] = useState<TikTokMedia | null>(null);
@@ -64,14 +65,10 @@ function App() {
   const [progress, setProgress] = useState<DownloadProgress | null>(null);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const resultRef = useRef<HTMLDivElement>(null);
   const toastTimer = useRef<number | null>(null);
   const downloadAbort = useRef<AbortController | null>(null);
 
-  const parsed = useMemo(
-    () => (input.trim() ? parseTikTokLink(input) : null),
-    [input],
-  );
+  const parsed = useMemo(() => (input.trim() ? parseTikTokLink(input) : null), [input]);
 
   const showToast = useCallback((message: string, tone: ToastTone = 'info') => {
     if (toastTimer.current) window.clearTimeout(toastTimer.current);
@@ -87,14 +84,23 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!media) return;
-    const frame = window.requestAnimationFrame(() => {
-      if (window.matchMedia('(max-width: 1023px)').matches) {
-        resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [media]);
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', THEME_COLORS[platform][theme]);
+  }, [platform, theme]);
+
+  useEffect(() => {
+    document.title =
+      tab === 'download'
+        ? 'TSun — TikTok downloader'
+        : tab === 'recent'
+          ? 'Recent — TSun'
+          : 'Guide — TSun';
+  }, [tab]);
+
+  const changeTab = useCallback((next: Tab) => {
+    setTab(next);
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, []);
 
   const handleFetch = useCallback(
     async (raw: string, options: { forceRefresh?: boolean } = {}) => {
@@ -116,9 +122,7 @@ function App() {
         });
 
         setMedia(fetched);
-        setHistory((current) =>
-          upsertHistory(historyEntryFromMedia(fetched), current),
-        );
+        setHistory((current) => upsertHistory(historyEntryFromMedia(fetched), current));
         showToast(
           fetched.isPhoto
             ? `Photo post loaded · ${fetched.images.length} images found`
@@ -151,13 +155,11 @@ function App() {
     void handleFetch(input);
   };
 
+
   const handlePaste = async () => {
     if (!navigator.clipboard || typeof navigator.clipboard.readText !== 'function') {
       inputRef.current?.focus();
-      showToast(
-        'Clipboard access is not available. Press and hold the input, then choose Paste.',
-        'info',
-      );
+      showToast('Clipboard access is unavailable. Press and hold the field, then choose Paste.', 'info');
       return;
     }
 
@@ -173,19 +175,13 @@ function App() {
 
       const result = parseTikTokLink(text);
       if (result.ok) {
-        const target = result.link.videoId
-          ? `${describeLink(result.link)} · #${result.link.videoId}`
-          : describeLink(result.link);
-        showToast(`${target} detected. Tap Fetch video.`, 'success');
+        showToast(`${describeLink(result.link)} detected. Tap Get video.`, 'success');
       } else {
-        showToast('Pasted. We will look for a TikTok link when you tap Fetch.', 'info');
+        showToast('Pasted. TSun will look for a TikTok link when you continue.', 'info');
       }
     } catch {
       inputRef.current?.focus();
-      showToast(
-        'Clipboard access is blocked. Press and hold the input, then choose Paste.',
-        'error',
-      );
+      showToast('Clipboard access is blocked. Press and hold the field, then choose Paste.', 'error');
     }
   };
 
@@ -198,6 +194,7 @@ function App() {
   const handleSelectHistory = (entry: HistoryEntry) => {
     if (isLoading) return;
     setInput(entry.sourceUrl);
+    changeTab('download');
     void handleFetch(entry.sourceUrl);
   };
 
@@ -216,10 +213,7 @@ function App() {
       });
 
       if (result.method === 'direct') {
-        showToast(
-          'Opened in a new tab. Long-press the video and choose Download to save it.',
-          'info',
-        );
+        showToast('Opened in a new tab. Long-press the file and choose Download.', 'info');
       } else {
         showToast(`${option.label} download started.`, 'success');
       }
@@ -236,117 +230,84 @@ function App() {
     }
   };
 
-  const handleCancelDownload = () => {
-    downloadAbort.current?.abort();
-  };
-
   const handleCopy = async (text: string, label: string) => {
     const copied = await copyText(text);
     showToast(
-      copied ? `${label} copied to clipboard.` : 'Could not access the clipboard.',
+      copied ? `${label} copied.` : 'Could not access the clipboard.',
       copied ? 'success' : 'error',
     );
   };
 
-  const handleRemoveHistory = (entry: HistoryEntry) => {
-    setHistory((current) => removeHistoryEntry(entry.id, current));
-  };
-
-  const handleClearHistory = () => {
-    setHistory(clearHistory());
-    showToast('History cleared.', 'info');
-  };
-
-  const handleUseNewLink = () => {
+  const handleNewLink = () => {
     setInput('');
     setMedia(null);
     setError(null);
+    changeTab('download');
     window.requestAnimationFrame(() => inputRef.current?.focus());
   };
 
+  const controller: AppController = {
+    input,
+    parsed,
+    error,
+    isLoading,
+    media,
+    activeDownload,
+    progress,
+    history,
+    onInput: (value) => {
+      setInput(value);
+      setError(null);
+    },
+    onSubmit: handleSubmit,
+    onPaste: () => {
+      void handlePaste();
+    },
+    onUseSample: handleUseSample,
+    onDismissError: () => setError(null),
+    onDownload: (option) => {
+      void handleDownload(option);
+    },
+    onCancelDownload: () => downloadAbort.current?.abort(),
+    onCopy: (text, label) => {
+      void handleCopy(text, label);
+    },
+    onNewLink: handleNewLink,
+    onSelectHistory: handleSelectHistory,
+    onRemoveHistory: (entry) => {
+      setHistory((current) => removeHistoryEntry(entry.id, current));
+    },
+    onClearHistory: () => {
+      setHistory(clearHistory());
+      showToast('History cleared.', 'info');
+    },
+  };
+
   return (
-    <div
-      id="top"
-      className="relative min-h-[100dvh] overflow-x-clip bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-[#070b18] dark:text-white"
-    >
-      <div aria-hidden="true" className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(56,189,248,0.18),transparent_55%)] dark:bg-[radial-gradient(ellipse_at_top,rgba(34,211,238,0.14),transparent_55%)]" />
-        <div className="absolute -left-24 top-10 h-72 w-72 rounded-full bg-sky-400/25 blur-3xl dark:bg-cyan-500/10 sm:h-96 sm:w-96" />
-        <div className="absolute -right-20 top-1/3 h-64 w-64 rounded-full bg-fuchsia-400/20 blur-3xl dark:bg-fuchsia-500/10 sm:h-80 sm:w-80" />
-        <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-indigo-400/15 blur-3xl dark:bg-indigo-500/10" />
-        <div className="bg-grid absolute inset-0 opacity-[0.35] dark:opacity-20" />
-      </div>
-
-      <Header theme={theme} onToggleTheme={toggleTheme} />
-
-      <main className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-12 sm:px-6 lg:px-8">
-        <Hero />
-
-        <div className="mx-auto mt-6 max-w-3xl sm:mt-8">
-          <UrlForm
-            value={input}
-            parsed={parsed}
-            error={error}
-            isLoading={isLoading}
+    <>
+      <Shell
+        platform={platform}
+        tab={tab}
+        theme={theme}
+        onTabChange={changeTab}
+        onToggleTheme={toggleTheme}
+      >
+        {tab === 'download' && (
+          <DownloadScreen
+            platform={platform}
+            controller={controller}
             inputRef={inputRef}
-            onChange={(value) => {
-              setInput(value);
-              setError(null);
-            }}
-            onSubmit={handleSubmit}
-            onPaste={() => {
-              void handlePaste();
-            }}
-            onDismissError={() => setError(null)}
-            onUseSample={handleUseSample}
+            onTabChange={changeTab}
           />
-
-          <p className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-            <span>✓ No sign-up</span>
-            <span>✓ No watermark</span>
-            <span>✓ Works on mobile &amp; desktop</span>
-          </p>
-        </div>
-
-        <div ref={resultRef} className="mx-auto max-w-4xl scroll-mt-24">
-          {isLoading && <LoadingCard />}
-          {!isLoading && media && (
-            <MediaResult
-              key={media.id || media.sourceUrl}
-              media={media}
-              activeDownload={activeDownload}
-              progress={progress}
-              onDownload={(option) => {
-                void handleDownload(option);
-              }}
-              onCancelDownload={handleCancelDownload}
-              onCopy={(text, label) => {
-                void handleCopy(text, label);
-              }}
-              onUseNewLink={handleUseNewLink}
-            />
-          )}
-        </div>
-
-        <div className="mx-auto max-w-4xl">
-          <HistoryPanel
-            entries={history}
-            onSelect={handleSelectHistory}
-            onRemove={handleRemoveHistory}
-            onClear={handleClearHistory}
-          />
-        </div>
-
-        <HowItWorks />
-        <Features />
-        <Faq />
-      </main>
-
-      <Footer />
-      <Toast toast={toast} onDismiss={() => setToast(null)} />
-    </div>
+        )}
+        {tab === 'recent' && (
+          <RecentScreen platform={platform} controller={controller} onTabChange={changeTab} />
+        )}
+        {tab === 'guide' && <GuideScreen platform={platform} />}
+      </Shell>
+      <PlatformToast platform={platform} toast={toast} onDismiss={() => setToast(null)} />
+    </>
   );
 }
 
 export default App;
-

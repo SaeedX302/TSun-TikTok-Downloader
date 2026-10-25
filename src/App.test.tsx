@@ -52,7 +52,10 @@ describe('App', () => {
     mockMatchMedia();
     window.localStorage.clear();
     window.sessionStorage.clear();
+    window.history.replaceState({}, '', '/');
+    delete document.documentElement.dataset.platform;
     Element.prototype.scrollIntoView = vi.fn();
+    window.scrollTo = vi.fn();
 
     vi.stubGlobal(
       'fetch',
@@ -69,14 +72,15 @@ describe('App', () => {
     vi.unstubAllGlobals();
   });
 
-  it('renders the hero and the URL form', () => {
+  it('renders the editorial workspace and the URL form', () => {
     render(<App />);
 
     expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(
-      /save tiktok videos/i,
+      /download the video/i,
     );
     expect(screen.getByLabelText(/tiktok link or share text/i)).toBeTruthy();
-    expect(screen.getByRole('button', { name: /fetch video/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /get video/i })).toBeTruthy();
+    expect(document.documentElement.dataset.platform).toBe('desktop');
   });
 
   it('detects an encoded app share link and loads the video', async () => {
@@ -92,13 +96,13 @@ describe('App', () => {
 
     expect(await screen.findByText(/app share link detected/i)).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: /fetch video/i }));
+    fireEvent.click(screen.getByRole('button', { name: /get video/i }));
 
     expect(await screen.findByText(/ready to download/i)).toBeTruthy();
     expect(screen.getByText('HD video')).toBeTruthy();
     expect(screen.getByText('Audio only')).toBeTruthy();
     expect(screen.getAllByText(/@ladygaga/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/recent downloads/i)).toBeTruthy();
+    expect(screen.getByText(/last fetched/i)).toBeTruthy();
 
     const calledUrl = String((fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0]);
     expect(calledUrl).toContain('https%3A%2F%2Fvm.tiktok.com%2FZMabc123%2F');
@@ -110,9 +114,57 @@ describe('App', () => {
     fireEvent.change(screen.getByLabelText(/tiktok link or share text/i), {
       target: { value: 'hello world' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /fetch video/i }));
+    fireEvent.click(screen.getByRole('button', { name: /get video/i }));
 
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toMatch(/does not look like a tiktok link/i);
+  });
+
+  it('switches between the workspace tabs', () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: /recent history/i }));
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Recent');
+    expect(screen.getByText(/nothing here yet/i)).toBeTruthy();
+
+    fireEvent.click(screen.getAllByRole('button', { name: /^guide$/i })[0]);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('A short field guide.');
+
+    fireEvent.click(screen.getAllByRole('button', { name: /^download$/i })[0]);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/download the video/i);
+  });
+
+  it('renders an iOS result without losing the native grouped layout', async () => {
+    window.history.replaceState({}, '', '/?ui=ios');
+    const { container } = render(<App />);
+
+    fireEvent.change(screen.getByLabelText(/tiktok link or share text/i), {
+      target: { value: 'https://www.tiktok.com/@ladygaga/video/7376784960625085742' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /get video/i }));
+
+    expect(await screen.findByText('HD video')).toBeTruthy();
+    expect(container.querySelector('.ios-result')).toBeTruthy();
+    expect(container.querySelector('.ios-list')).toBeTruthy();
+  });
+
+  it('renders the Material 3 shell on Android', () => {
+    window.history.replaceState({}, '', '/?ui=android');
+    const { container } = render(<App />);
+
+    expect(document.documentElement.dataset.platform).toBe('android');
+    expect(container.querySelector('.m3-shell')).toBeTruthy();
+    expect(container.querySelector('.m3-nav')).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Download');
+  });
+
+  it('renders the native iOS shell on iPhone and iPad', () => {
+    window.history.replaceState({}, '', '/?ui=ios');
+    const { container } = render(<App />);
+
+    expect(document.documentElement.dataset.platform).toBe('ios');
+    expect(container.querySelector('.ios-shell')).toBeTruthy();
+    expect(container.querySelector('.ios-tabbar')).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Download');
   });
 });
