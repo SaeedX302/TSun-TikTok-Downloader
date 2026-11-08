@@ -364,9 +364,9 @@ export async function fetchTikTokMedia(
       if (envelope.code === 0 && Object.keys(data).length > 0) {
         const media = normalizeTikwmResponse(data, link);
 
-        if (media.downloads.length === 0 && !media.isPhoto) {
+        if (media.downloads.length === 0) {
           throw new TikTokApiError(
-            'No downloadable video was found for this post.',
+            'No downloadable media was found for this post.',
             'The post may be a live stream, private, or region-locked. Try a different link.',
           );
         }
